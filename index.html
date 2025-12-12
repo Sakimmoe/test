@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="resources/css/index.css">
     <link rel="icon" href="resources/images/logo.png" type="image/png">
 
-    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.10.0/dist/storage.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-realtime@5.0.0-beta.7/dist/realtime.min.js"></script>
+    <script defer src="resources/js/leancloud/av-core.js"></script>
+    <script defer src="resources/js/leancloud/realtime.min.js"></script>
 
     <style>
         /* ----------------------- 弹幕功能 CSS (已优化定位) ----------------------- */
@@ -74,12 +74,13 @@
     </style>
 
     <script>
-        // 【已替换】你的密钥
+        // 【你的密钥】
         const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
         const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
         
         document.addEventListener('DOMContentLoaded', function() {
             try {
+                // 现在 AV 应该可以被定义了
                 if (typeof AV !== 'undefined' && AV.init) {
                     AV.init({
                         appId: APP_ID,
@@ -87,7 +88,8 @@
                     });
                     console.log('AV initialized successfully.');
                 } else {
-                    console.error('Initialization failed: AV is not defined during DOMContentLoaded. (CDN PATH ERROR LIKELY)');
+                    // 如果仍然失败，说明本地文件路径或文件本身有问题
+                    console.error('Initialization failed: AV is not defined during DOMContentLoaded. (LOCAL FILE MISSING!)');
                 }
             } catch (e) {
                 console.error('AV initialization error:', e);
@@ -206,9 +208,9 @@
 
         // --- B. 连接和监听实时消息 (重点：依赖 AV 必须已经初始化) ---
         async function setupDanmaku() {
-            // 如果 AV 仍然未定义，直接退出
+            // 如果 AV 仍然未定义，可能是本地文件路径或文件本身有问题
             if (typeof AV === 'undefined') {
-                console.error("Fatal Error: AV SDK failed to load. Cannot connect to danmaku service. (Check Network Tab for CDN failure)");
+                console.error("Fatal Error: AV SDK failed to load. Cannot connect to danmaku service. (请检查本地文件路径是否正确: resources/js/leancloud/)");
                 return;
             }
             
