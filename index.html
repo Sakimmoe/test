@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>实时弹幕评论网站</title>
+    <title>Luluwo 网站 - 实时弹幕演示</title>
     
     <style>
-        /* 页面基础样式，让弹幕容器看起来更清晰 */
+        /* 页面基础样式 (你可以保留你网站原本的 CSS) */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -72,8 +72,8 @@
 </head>
 <body>
 
-    <h1>静态网站实时弹幕演示</h1>
-
+    <h1>欢迎来到 Luluwo 的网站！</h1>
+    <p>这是你网站的原有内容，弹幕功能会显示在下方区域。</p>
     <div id="danmaku-container">
         </div>
 
@@ -86,16 +86,12 @@
     <script src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
 
     <script>
-        // 【❗已替换】你提供的密钥和服务器地址
+        // 【❗已替换】你提供的密钥
         const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
         const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
         const REST_API_URL = 'https://m7d44wkw.api.lncldglobal.com'; 
 
         const CONVERSATION_ID = 'global-danmaku-room'; // 弹幕频道ID
-        
-        // 从 REST API URL 提取基础域名用于 RTM 连接（例如：m7d44wkw.api.lncldglobal.com）
-        // 我们需要告诉 RTM SDK 去哪里连接，这个地址通常是 REST API 地址的基础
-        const API_HOST = new URL(REST_API_URL).host;
 
         // 客户端唯一 ID (匿名用户标识符)
         const clientID = 'anon-' + Math.random().toString(36).substring(7);
@@ -104,7 +100,7 @@
         AV.init({
             appId: APP_ID,
             appKey: APP_KEY,
-            // 明确指定 API 服务器地址，确保连接稳定
+            // 明确指定 API 服务器地址
             serverURLs: REST_API_URL 
         });
 
@@ -139,27 +135,23 @@
             });
         }
 
-        // --- B. 连接和监听实时消息 ---
+        // --- B. 连接和监听实时消息 (已修复逻辑) ---
         async function setupDanmaku() {
             try {
-                // 1. 创建实时通讯客户端实例
-                // 明确使用 API Host 作为 RTM 连接的接入点，提高可靠性
-                realtime = new AV.Realtime({ 
-                    appId: APP_ID,
-                    server: API_HOST // 使用 REST API 地址的基础 host 作为 RTM 服务器地址
-                });
+                // 1. 简化的 Realtime 初始化，让 SDK 自己处理 RTM 域名解析
+                realtime = new AV.Realtime({ appId: APP_ID });
 
                 // 2. 匿名登录客户端
                 const client = await realtime.createIMClient(clientID);
                 
-                // 3. 获取或创建一个公共聊天室 (作为弹幕频道)
+                // 3. 获取或创建一个公共聊天室
                 conversation = await client.getConversation(CONVERSATION_ID, {
                     name: 'Danmaku Room',
                     isUnique: true,
                     transient: false 
                 });
 
-                // 4. 设置消息监听器：当收到新消息时调用 renderDanmaku
+                // 4. 设置消息监听器
                 client.on('message', (message, convo) => {
                     if (convo.id === CONVERSATION_ID) {
                         renderDanmaku(message.getText());
@@ -169,32 +161,43 @@
                 console.log('LeanCloud 实时连接成功！');
 
             } catch (error) {
-                console.error('LeanCloud 连接失败:', error);
-                alert('弹幕服务连接失败，请检查 LeanCloud 状态或配置！');
+                console.error('LeanCloud 连接失败:', error); 
+
+                let errorMessage = '弹幕服务连接失败。';
+                if (error.code === 4100) {
+                    errorMessage += '（错误代码 4100：应用可能处于免费版的休眠期。）';
+                } else if (error.code === 4101) {
+                    errorMessage += '（错误代码 4101：App ID 或 App Key 可能配置错误。）';
+                }
+                
+                alert(errorMessage);
             }
         }
 
         // --- C. 发送弹幕函数 ---
         sendBtn.addEventListener('click', async () => {
             const text = input.value.trim();
-            if (!text || !conversation) return;
+            // 修复点：如果 conversation 对象未建立成功，则阻止发送
+            if (!text || !conversation) {
+                 if (!conversation) {
+                     alert('弹幕服务未连接或正在连接中，请稍候再试。');
+                 }
+                 return;
+            }
 
             if (text.length > 50) {
                 alert('弹幕内容过长（限制50字）');
                 return;
             }
 
-            // 创建文本消息对象
             const message = new AV.TextMessage(text);
 
             try {
-                // 发送消息到公共聊天室
                 await conversation.send(message);
-                
                 input.value = ''; // 清空输入框
             } catch (e) {
                 console.error("发送失败:", e);
-                alert('发送弹幕失败，可能是网络问题或服务休眠。');
+                alert('发送弹幕失败，请检查网络或 LeanCloud 状态。');
             }
         });
 
