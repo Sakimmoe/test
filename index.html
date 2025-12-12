@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luluwo 网站 - 实时弹幕演示</title>
+    <title>Luluwo 的网站 - 实时弹幕评论</title>
     
     <style>
-        /* 页面基础样式 (你可以保留你网站原本的 CSS) */
+        /* ⚠️ 你的原有 CSS 样式可以放在这里，或者放在外部 CSS 文件中 ⚠️ */
+        /* ---------------------------------------------------- */
+        
+        /* 页面基础样式 */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -18,7 +21,7 @@
         /* 弹幕容器：关键设置 */
         #danmaku-container {
             position: relative; 
-            width: 80%; /* 占据页面宽度 */
+            width: 80%;
             max-width: 1000px;
             height: 400px; /* 调整高度以适应你的网站 */
             margin: 20px auto;
@@ -72,8 +75,9 @@
 </head>
 <body>
 
-    <h1>欢迎来到 Luluwo 的网站！</h1>
-    <p>这是你网站的原有内容，弹幕功能会显示在下方区域。</p>
+    <h1>欢迎回到 Luluwo 的网站！</h1>
+    <p>这是你网站的原有内容，现在可以在下方观看和发送实时弹幕。</p>
+    
     <div id="danmaku-container">
         </div>
 
@@ -86,25 +90,22 @@
     <script src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
 
     <script>
-        // 【❗已替换】你提供的密钥
+        // 【已替换】你的密钥和服务器地址
         const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
         const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
         const REST_API_URL = 'https://m7d44wkw.api.lncldglobal.com'; 
 
         const CONVERSATION_ID = 'global-danmaku-room'; // 弹幕频道ID
-
-        // 客户端唯一 ID (匿名用户标识符)
         const clientID = 'anon-' + Math.random().toString(36).substring(7);
 
         // 初始化 LeanCloud
         AV.init({
             appId: APP_ID,
             appKey: APP_KEY,
-            // 明确指定 API 服务器地址
             serverURLs: REST_API_URL 
         });
 
-        // 获取页面上的 DOM 元素
+        // 获取 DOM 元素
         const danmakuContainer = document.getElementById('danmaku-container');
         const input = document.getElementById('comment-input');
         const sendBtn = document.getElementById('send-btn');
@@ -120,7 +121,6 @@
             danmaku.className = 'danmaku-item';
             danmaku.textContent = text;
             
-            // 随机生成弹幕的垂直位置
             const containerHeight = danmakuContainer.clientHeight;
             const danmakuHeight = 30; 
             
@@ -129,7 +129,6 @@
             
             danmakuContainer.appendChild(danmaku);
 
-            // 动画结束后，自动移除 DOM 元素，清理内存
             danmaku.addEventListener('animationend', () => {
                 danmaku.remove();
             });
@@ -139,7 +138,7 @@
         async function setupDanmaku() {
             try {
                 // 1. 简化的 Realtime 初始化，让 SDK 自己处理 RTM 域名解析
-                realtime = new AV.Realtime({ appId: APP_ID });
+                realtime = new AV.Realtime({ appId: APP_ID }); 
 
                 // 2. 匿名登录客户端
                 const client = await realtime.createIMClient(clientID);
@@ -166,8 +165,6 @@
                 let errorMessage = '弹幕服务连接失败。';
                 if (error.code === 4100) {
                     errorMessage += '（错误代码 4100：应用可能处于免费版的休眠期。）';
-                } else if (error.code === 4101) {
-                    errorMessage += '（错误代码 4101：App ID 或 App Key 可能配置错误。）';
                 }
                 
                 alert(errorMessage);
@@ -177,11 +174,11 @@
         // --- C. 发送弹幕函数 ---
         sendBtn.addEventListener('click', async () => {
             const text = input.value.trim();
-            // 修复点：如果 conversation 对象未建立成功，则阻止发送
-            if (!text || !conversation) {
-                 if (!conversation) {
-                     alert('弹幕服务未连接或正在连接中，请稍候再试。');
-                 }
+            if (!text) return;
+
+            // 修复点：在发送前检查 conversation 是否已成功建立
+            if (!conversation) {
+                 alert('弹幕服务未连接或正在连接中，请稍候再试。');
                  return;
             }
 
