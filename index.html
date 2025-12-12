@@ -2,34 +2,30 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>28年后 你还会想起我吗</title> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luluwo 的网站 - 实时弹幕评论</title>
     
-    <style>
-        /* ⚠️ 你的原有 CSS 样式可以放在这里，或者放在外部 CSS 文件中 ⚠️ */
-        /* ---------------------------------------------------- */
-        
-        /* 页面基础样式 */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f0f0;
-            text-align: center;
-        }
+    <link rel="stylesheet" href="resources/css/index.css">
+    <link rel="icon" href="resources/images/logo.png" type="image/png">
 
+    <style>
+        /* ----------------------- 弹幕功能 CSS (已针对你网站进行优化) ----------------------- */
+        
         /* 弹幕容器：关键设置 */
         #danmaku-container {
-            position: relative; 
-            width: 80%;
-            max-width: 1000px;
-            height: 400px; /* 调整高度以适应你的网站 */
-            margin: 20px auto;
-            background-color: #333; /* 黑色背景，使白色弹幕更突出 */
-            border: 1px solid #ccc;
+            /* 放置在内容上方，但必须在 body/background 内部 */
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* 占满屏幕 */
+            /* 背景透明，只显示弹幕 */
+            background-color: transparent;
             overflow: hidden; 
-            /* 确保弹幕不会影响用户点击下方的元素 */
+            /* 确保弹幕不会影响用户点击原有页面的元素 */
             pointer-events: none; 
+            z-index: 10; /* 确保弹幕在背景视频之上，但在内容之下（如果你希望内容覆盖弹幕） */
         }
 
         /* 单个弹幕样式 */
@@ -40,29 +36,35 @@
             font-weight: bold;
             color: #fff; 
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); 
-            right: 0; /* 初始位置：从最右侧开始 */
-            
-            /* 核心：应用动画。10s 匀速滚动时间 */
+            right: 0; 
+            pointer-events: none; /* 弹幕本身不可点击 */
             animation: scroll-danmaku 10s linear forwards; 
         }
 
         /* 关键帧动画：定义弹幕从右到左的移动 */
         @keyframes scroll-danmaku {
             from { transform: translateX(0); }
-            /* 移动距离：确保弹幕完全移出屏幕左侧 */
             to { transform: translateX(calc(-100% - 100vw)); } 
         }
 
         /* 输入区域样式 */
         #danmaku-input-area {
-            margin: 20px auto;
-            width: 80%;
-            max-width: 1000px;
+            position: fixed; /* 固定在屏幕底部 */
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: 20; /* 确保输入框在所有内容之上 */
+            pointer-events: all; /* 确保用户可以点击输入 */
+            display: flex; /* 使用 flex 布局对齐输入框和按钮 */
+            gap: 10px;
         }
         #comment-input {
             padding: 10px;
-            width: 70%;
+            flex-grow: 1;
             border: 1px solid #ccc;
+            border-radius: 5px;
         }
         #send-btn {
             padding: 10px 20px;
@@ -70,24 +72,97 @@
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-
-    <h1>欢迎回到 Luluwo 的网站！</h1>
-    <p>这是你网站的原有内容，现在可以在下方观看和发送实时弹幕。</p>
-    
-    <div id="danmaku-container">
+    <div id="intro">
+        <div class="intro-inner" role="dialog" aria-label="Intro">
+            <div class="intro-line">
+                <span>Hello World</span>
+                <span class="dots" aria-hidden="true"></span>
+                <span class="caret" aria-hidden="true"></span>
+            </div>
+            <div class="intro-hint" aria-hidden="true">Please Press Any Key♪</div>
         </div>
-
+    </div>
+    
+    <div class="background">
+        <div id="danmaku-container"></div>
+        
+        <video
+            id="bg-video"
+            class="background-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            x5-playsinline="true"
+            x5-video-player-type="h5"
+            preload="auto"
+            disablepictureinpicture
+            controlsList="nodownload nofullscreen noremoteplayback"
+            data-desktop-src="resources/images/cyrene.mp4"
+            data-mobile-src="resources/images/lulu.mp4"
+            src="resources/images/cyrene.mp4">
+        </video>
+        
+        <div class="lang-switch">
+            <span id="switch-en" role="button" tabindex="0">EN</span> |
+            <span id="switch-zh" role="button" tabindex="0">ZH</span>
+        </div>
+        
+        <div class="gradient-overlay"></div>
+        
+        <div class="content">
+            <h2 class="title">H E L L O &nbsp; W O R L D</h2>
+            <div class="time-box">
+                <div class="days"><p class="day value">00</p><span class="text">days</span></div>
+                <div class="hours"><p class="hour value">00</p><span class="text">hours</span></div>
+                <div class="mins"><p class="min value">00</p><span class="text">min</span></div>
+                <div class="secs"><p class="sec value">00</p><span class="text">sec</span></div>
+            </div>
+            <p class="sub-title">「This time, together with me…」</p>
+            <p class="sub-title">「Let’s write a new chapter of the story♪」</p>
+            <p class="sub-title tips"></p>
+        </div>
+        
+        <div class="meta-row">
+            <div class="icp-box">
+                <a class="meta-badge icp" href="https://icp.gov.moe/?keyword=20257728" target="_blank">萌ICP备20257728号</a>
+            </div>
+            <a class="meta-badge email" href="mailto:762930756@qq.com">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path d="M2 5h20v14H2V5zm2 2v10h16V7l-8 5L4 7z" fill="currentColor"/></svg>
+                <span>762930756@qq.com</span>
+            </a>
+        </div>
+        
+        <div class="music-control">
+            <img id="music-btn" src="resources/images/musicon.webp" alt="Music Toggle">
+        </div>
+    </div>
+    
     <div id="danmaku-input-area">
-        <input type="text" id="comment-input" placeholder="输入弹幕内容...">
+        <input type="text" id="comment-input" placeholder="发送一条实时弹幕...">
         <button id="send-btn">发送弹幕</button>
     </div>
 
+    <audio id="bg-music" preload="none" loop>
+        <source src="resources/audio/true.mp3" type="audio/mpeg">
+    </audio>
+
+    <footer class="footer">
+        © This website is solely dedicated to documenting the 28-year promise between Shizuku Lulu and the Lulumins.
+    </footer>
+    
+    <script src="resources/js/jquery-3.2.1.min.js"></script>    
+    
     <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@latest/dist/av-core-mini.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
+
+    <script src="resources/js/index.js"></script>
 
     <script>
         // 【已替换】你的密钥和服务器地址
@@ -121,10 +196,11 @@
             danmaku.className = 'danmaku-item';
             danmaku.textContent = text;
             
+            // 随机生成弹幕的垂直位置 (使用容器的实际高度)
             const containerHeight = danmakuContainer.clientHeight;
             const danmakuHeight = 30; 
             
-            const topPosition = Math.floor(Math.random() * (containerHeight - danmakuHeight)); 
+            const topPosition = Math.floor(Math.random() * (containerHeight * 0.8)); // 避免弹幕出现在顶部和底部边缘
             danmaku.style.top = `${topPosition}px`;
             
             danmakuContainer.appendChild(danmaku);
@@ -137,7 +213,7 @@
         // --- B. 连接和监听实时消息 (已修复逻辑) ---
         async function setupDanmaku() {
             try {
-                // 1. 简化的 Realtime 初始化，让 SDK 自己处理 RTM 域名解析
+                // 1. 简化的 Realtime 初始化
                 realtime = new AV.Realtime({ appId: APP_ID }); 
 
                 // 2. 匿名登录客户端
@@ -167,7 +243,8 @@
                     errorMessage += '（错误代码 4100：应用可能处于免费版的休眠期。）';
                 }
                 
-                alert(errorMessage);
+                // alert(errorMessage); // 不再弹窗，避免影响用户体验
+                console.log(errorMessage);
             }
         }
 
