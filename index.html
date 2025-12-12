@@ -2,87 +2,204 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>28年后 你还会想起我吗</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="resources/css/index.css">
-    <link rel="icon" href="resources/images/logo.png" type="image/png">
+    <title>实时弹幕评论网站</title>
+    
+    <style>
+        /* 页面基础样式，让弹幕容器看起来更清晰 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+
+        /* 弹幕容器：关键设置 */
+        #danmaku-container {
+            position: relative; 
+            width: 80%; /* 占据页面宽度 */
+            max-width: 1000px;
+            height: 400px; /* 调整高度以适应你的网站 */
+            margin: 20px auto;
+            background-color: #333; /* 黑色背景，使白色弹幕更突出 */
+            border: 1px solid #ccc;
+            overflow: hidden; 
+            /* 确保弹幕不会影响用户点击下方的元素 */
+            pointer-events: none; 
+        }
+
+        /* 单个弹幕样式 */
+        .danmaku-item {
+            position: absolute;
+            white-space: nowrap; 
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff; 
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); 
+            right: 0; /* 初始位置：从最右侧开始 */
+            
+            /* 核心：应用动画。10s 匀速滚动时间 */
+            animation: scroll-danmaku 10s linear forwards; 
+        }
+
+        /* 关键帧动画：定义弹幕从右到左的移动 */
+        @keyframes scroll-danmaku {
+            from { transform: translateX(0); }
+            /* 移动距离：确保弹幕完全移出屏幕左侧 */
+            to { transform: translateX(calc(-100% - 100vw)); } 
+        }
+
+        /* 输入区域样式 */
+        #danmaku-input-area {
+            margin: 20px auto;
+            width: 80%;
+            max-width: 1000px;
+        }
+        #comment-input {
+            padding: 10px;
+            width: 70%;
+            border: 1px solid #ccc;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div id="intro">
-        <div class="intro-inner" role="dialog" aria-label="Intro">
-            <div class="intro-line">
-                <span>Hello World</span>
-                <span class="dots" aria-hidden="true"></span>
-                <span class="caret" aria-hidden="true"></span>
-            </div>
-            <div class="intro-hint" aria-hidden="true">Please Press Any Key♪</div>
+
+    <h1>静态网站实时弹幕演示</h1>
+
+    <div id="danmaku-container">
         </div>
+
+    <div id="danmaku-input-area">
+        <input type="text" id="comment-input" placeholder="输入弹幕内容...">
+        <button id="send-btn">发送弹幕</button>
     </div>
 
-    <div class="background">
-        <video
-            id="bg-video"
-            class="background-video"
-            autoplay
-            muted
-            loop
-            playsinline
-            webkit-playsinline
-            x5-playsinline="true"
-            x5-video-player-type="h5"
-            preload="auto"
-            disablepictureinpicture
-            controlsList="nodownload nofullscreen noremoteplayback"
-            data-desktop-src="resources/images/cyrene.mp4"
-            data-mobile-src="resources/images/lulu.mp4"
-            src="resources/images/cyrene.mp4">
-        </video>
-        
-        <div class="lang-switch">
-            <span id="switch-en" role="button" tabindex="0">EN</span> |
-            <span id="switch-zh" role="button" tabindex="0">ZH</span>
-        </div>
-        
-        <div class="gradient-overlay"></div>
-        
-        <div class="content">
-            <h2 class="title">H E L L O &nbsp; W O R L D</h2>
-            <div class="time-box">
-                <div class="days"><p class="day value">00</p><span class="text">days</span></div>
-                <div class="hours"><p class="hour value">00</p><span class="text">hours</span></div>
-                <div class="mins"><p class="min value">00</p><span class="text">min</span></div>
-                <div class="secs"><p class="sec value">00</p><span class="text">sec</span></div>
-            </div>
-            <p class="sub-title">「This time, together with me…」</p>
-            <p class="sub-title">「Let’s write a new chapter of the story♪」</p>
-            <p class="sub-title tips"></p>
-        </div>
-        
-        <div class="meta-row">
-            <div class="icp-box">
-                <a class="meta-badge icp" href="https://icp.gov.moe/?keyword=20257728" target="_blank">萌ICP备20257728号</a>
-            </div>
-            <a class="meta-badge email" href="mailto:762930756@qq.com">
-                <svg width="16" height="16" viewBox="0 0 24 24"><path d="M2 5h20v14H2V5zm2 2v10h16V7l-8 5L4 7z" fill="currentColor"/></svg>
-                <span>762930756@qq.com</span>
-            </a>
-        </div>
-        
-        <div class="music-control">
-            <img id="music-btn" src="resources/images/musicon.webp" alt="Music Toggle">
-        </div>
-    </div>
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@latest/dist/av-core-mini.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
 
-    <audio id="bg-music" preload="none" loop>
-        <source src="resources/audio/true.mp3" type="audio/mpeg">
-    </audio>
+    <script>
+        // 【❗已替换】你提供的密钥和服务器地址
+        const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
+        const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
+        const REST_API_URL = 'https://m7d44wkw.api.lncldglobal.com'; 
 
-    <footer class="footer">
-        © This website is solely dedicated to documenting the 28-year promise between Shizuku Lulu and the Lulumins.
-    </footer>
+        const CONVERSATION_ID = 'global-danmaku-room'; // 弹幕频道ID
+        
+        // 从 REST API URL 提取基础域名用于 RTM 连接（例如：m7d44wkw.api.lncldglobal.com）
+        // 我们需要告诉 RTM SDK 去哪里连接，这个地址通常是 REST API 地址的基础
+        const API_HOST = new URL(REST_API_URL).host;
 
-    <script src="resources/js/jquery-3.2.1.min.js"></script>
-    <script src="resources/js/index.js"></script>
+        // 客户端唯一 ID (匿名用户标识符)
+        const clientID = 'anon-' + Math.random().toString(36).substring(7);
+
+        // 初始化 LeanCloud
+        AV.init({
+            appId: APP_ID,
+            appKey: APP_KEY,
+            // 明确指定 API 服务器地址，确保连接稳定
+            serverURLs: REST_API_URL 
+        });
+
+        // 获取页面上的 DOM 元素
+        const danmakuContainer = document.getElementById('danmaku-container');
+        const input = document.getElementById('comment-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        let realtime = null;
+        let conversation = null;
+
+        // --- A. 弹幕渲染和动效函数 ---
+        function renderDanmaku(text) {
+            if (!danmakuContainer || !text) return; 
+
+            const danmaku = document.createElement('div');
+            danmaku.className = 'danmaku-item';
+            danmaku.textContent = text;
+            
+            // 随机生成弹幕的垂直位置
+            const containerHeight = danmakuContainer.clientHeight;
+            const danmakuHeight = 30; 
+            
+            const topPosition = Math.floor(Math.random() * (containerHeight - danmakuHeight)); 
+            danmaku.style.top = `${topPosition}px`;
+            
+            danmakuContainer.appendChild(danmaku);
+
+            // 动画结束后，自动移除 DOM 元素，清理内存
+            danmaku.addEventListener('animationend', () => {
+                danmaku.remove();
+            });
+        }
+
+        // --- B. 连接和监听实时消息 ---
+        async function setupDanmaku() {
+            try {
+                // 1. 创建实时通讯客户端实例
+                // 明确使用 API Host 作为 RTM 连接的接入点，提高可靠性
+                realtime = new AV.Realtime({ 
+                    appId: APP_ID,
+                    server: API_HOST // 使用 REST API 地址的基础 host 作为 RTM 服务器地址
+                });
+
+                // 2. 匿名登录客户端
+                const client = await realtime.createIMClient(clientID);
+                
+                // 3. 获取或创建一个公共聊天室 (作为弹幕频道)
+                conversation = await client.getConversation(CONVERSATION_ID, {
+                    name: 'Danmaku Room',
+                    isUnique: true,
+                    transient: false 
+                });
+
+                // 4. 设置消息监听器：当收到新消息时调用 renderDanmaku
+                client.on('message', (message, convo) => {
+                    if (convo.id === CONVERSATION_ID) {
+                        renderDanmaku(message.getText());
+                    }
+                });
+                
+                console.log('LeanCloud 实时连接成功！');
+
+            } catch (error) {
+                console.error('LeanCloud 连接失败:', error);
+                alert('弹幕服务连接失败，请检查 LeanCloud 状态或配置！');
+            }
+        }
+
+        // --- C. 发送弹幕函数 ---
+        sendBtn.addEventListener('click', async () => {
+            const text = input.value.trim();
+            if (!text || !conversation) return;
+
+            if (text.length > 50) {
+                alert('弹幕内容过长（限制50字）');
+                return;
+            }
+
+            // 创建文本消息对象
+            const message = new AV.TextMessage(text);
+
+            try {
+                // 发送消息到公共聊天室
+                await conversation.send(message);
+                
+                input.value = ''; // 清空输入框
+            } catch (e) {
+                console.error("发送失败:", e);
+                alert('发送弹幕失败，可能是网络问题或服务休眠。');
+            }
+        });
+
+        // 页面加载完成后启动
+        window.onload = setupDanmaku;
+    </script>
 </body>
 </html>
