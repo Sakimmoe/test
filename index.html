@@ -6,184 +6,89 @@ function setBackgroundVideoSource() {
     const desktopSrc = videoElement.getAttribute('data-desktop-src');
     const mobileSrc = videoElement.getAttribute('data-mobile-src');
     
-    // 判定手机端：屏幕宽度小于 768px
+    // 判定手机端：宽度小于等于 768px
     const isMobile = window.innerWidth <= 768;
     const targetSrc = isMobile ? mobileSrc : desktopSrc;
 
-    // 如果当前地址不包含目标视频文件名，则切换
-    if (targetSrc && (!videoElement.src || videoElement.src.indexOf(targetSrc) === -1)) {
+    // 只有当 src 发生变化时才重新加载，防止闪烁
+    const currentSrc = videoElement.getAttribute('src');
+    if (targetSrc && currentSrc !== targetSrc) {
         videoElement.pause();
-        videoElement.src = targetSrc;
+        videoElement.setAttribute('src', targetSrc);
         videoElement.load();
-        // 尝试静音播放
-        videoElement.play().catch(() => {});
+        videoElement.play().catch(function(e) {
+            console.log("自动播放被拦截");
+        });
     }
 }
 
-// 页面加载时立即运行一次
-setBackgroundVideoSource();
-
-// 监听窗口大小变化（如手机横屏）
-window.addEventListener('resize', function() {
-    clearTimeout(window.resizeTimer);
-    window.resizeTimer = setTimeout(setBackgroundVideoSource, 250);
-});
-
-// === 全局音乐工具函数 ===
+// === 全局音乐控制 ===
 window.__musicState = { isPlaying: false };
 
 window.playBgMusic = function () {
-  const audio = document.getElementById('bg-music');
-  if (!audio) return;
-  try {
-    const p = audio.play();
-    if (p && typeof p.then === 'function') {
-      p.then(() => {
+    const audio = document.getElementById('bg-music');
+    if (!audio) return;
+    audio.play().then(() => {
         window.__musicState.isPlaying = true;
-        const btn = document.getElementById('music-btn');
-        if (btn) btn.setAttribute('src', 'resources/images/musicon.webp');
-      }).catch(() => {});
-    } else {
-      window.__musicState.isPlaying = !audio.paused;
-      if (window.__musicState.isPlaying) {
-        const btn = document.getElementById('music-btn');
-        if (btn) btn.setAttribute('src', 'resources/images/musicon.webp');
-      }
-    }
-  } catch (_) {}
+        $('#music-btn').attr('src', 'resources/images/musicon.webp');
+    }).catch(() => {});
 };
 
 window.pauseBgMusic = function () {
-  const audio = document.getElementById('bg-music');
-  if (!audio) return;
-  try { audio.pause(); } catch (_) {}
-  window.__musicState.isPlaying = false;
-  const btn = document.getElementById('music-btn');
-  if (btn) btn.setAttribute('src', 'resources/images/musicoff.webp');
+    const audio = document.getElementById('bg-music');
+    if (audio) audio.pause();
+    window.__musicState.isPlaying = false;
+    $('#music-btn').attr('src', 'resources/images/musicoff.webp');
 };
 
-window.tryPlayBgVideo = function () {
-  const v = document.getElementById('bg-video');
-  if (!v) return;
-  v.muted = true;
-  v.playsInline = true;
-  v.setAttribute('muted', 'muted');
-  v.setAttribute('playsinline', 'true');
-  try {
-    v.play().catch(() => {});
-  } catch (_) {}
-};
-
-// === 主页面逻辑 ===
+// === 页面逻辑初始化 ===
 $(function () {
-  let timerId = null;
-  const texts = {
-    en: {
-      title: "Our 28-Year Promise: I Will Be There.",
-      subTitle1: "「This time, together with me…」",
-      subTitle2: "「Let’s write a new chapter of the story♪」",
-      days: "days", hours: "hours", min: "min", sec: "sec", countingUp: "♪"
-    },
-    zh: {
-      title: "28年之约 绝不失约",
-      subTitle1: "「这次，与我一起……」",
-      subTitle2: "「为故事写下新的篇章吧♪」",
-      days: "days", hours: "hours", min: "min", sec: "sec", countingUp: "♪"
-    }
-  };
-
-  function getUserLang() {
-    const lang = navigator.language || navigator.userLanguage || "";
-    return lang.toLowerCase().startsWith("zh") ? "zh" : "en";
-  }
-
-  let currentLang = getUserLang();
-
-  function setLangText(lang = currentLang) {
-    const t = texts[lang];
-    $(".title").text(t.title);
-    $(".sub-title").eq(0).text(t.subTitle1);
-    $(".sub-title").eq(1).text(t.subTitle2);
-    $(".days .text").text(t.days);
-    $(".hours .text").text(t.hours);
-    $(".min .text").text(t.min);
-    $(".sec .text").text(t.sec);
-    currentLang = lang;
-  }
-
-  function parseAsUTC8(dateTimeStr) {
-    const iso = dateTimeStr.replace(" ", "T") + "+08:00";
-    const d = new Date(iso);
-    if (!isNaN(d.getTime())) return d;
-    return new Date();
-  }
-
-  function splitDHMS(ms) {
-    ms = Math.max(0, Math.floor(ms));
-    const dayMs = 24 * 60 * 60 * 1000, hourMs = 60 * 60 * 1000, minMs = 60 * 1000;
-    const days = Math.floor(ms / dayMs); ms %= dayMs;
-    const hours = Math.floor(ms / hourMs); ms %= hourMs;
-    const minutes = Math.floor(ms / minMs); ms %= minMs;
-    const seconds = Math.floor(ms / 1000);
-    const pad = (n) => (n < 10 ? "0" + n : String(n));
-    return { d: pad(days), h: pad(hours), m: pad(minutes), s: pad(seconds) };
-  }
-
-  function renderDHMS({ d, h, m, s }) {
-    $("p.day").text(d); $("p.hour").text(h); $("p.min").text(m); $("p.sec").text(s);
-  }
-
-  function startTicker(targetDateUTC) {
-    const tick = () => {
-      const now = new Date();
-      const diff = targetDateUTC.getTime() - now.getTime();
-      renderDHMS(splitDHMS(Math.abs(diff)));
-    };
-    tick();
-    timerId = setInterval(tick, 1000);
-  }
-
-  const futureTime = "2052-02-29 00:00:00";
-  const targetDate = parseAsUTC8(futureTime);
-  setLangText();
-  $(".tips").text(`${futureTime} (UTC+8)`);
-  startTicker(targetDate);
-
-  $("#switch-en").on("click", function () { setLangText("en"); });
-  $("#switch-zh").on("click", function () { setLangText("zh"); });
-
-  const musicBtn = $("#music-btn");
-  if (musicBtn.length) {
-    musicBtn.attr("src", "resources/images/musicoff.webp");
-    musicBtn.on("click", function () {
-      if (window.__musicState.isPlaying) window.pauseBgMusic();
-      else window.playBgMusic();
+    // 1. 初始化视频源
+    setBackgroundVideoSource();
+    $(window).on('resize', function() {
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(setBackgroundVideoSource, 250);
     });
-  }
-});
 
-// === Intro 遮罩逻辑 ===
-(function () {
-  function run() {
-    const intro = document.getElementById('intro');
-    if (!intro) return;
-    document.body.classList.add('no-scroll');
+    // 2. 倒计时逻辑
+    const futureTime = "2052-02-29 00:00:00";
+    function updateCountdown() {
+        const target = new Date("2052-02-29T00:00:00+08:00").getTime();
+        const now = new Date().getTime();
+        const diff = Math.abs(target - now);
 
-    function dismissIntro() {
-      if (!intro || intro.classList.contains('hidden')) return;
-      window.playBgMusic();
-      setBackgroundVideoSource(); // 确保视频源在消失时设置正确
-      window.tryPlayBgVideo();
-      intro.classList.add('hidden');
-      setTimeout(() => intro.remove(), 800);
-      document.body.classList.remove('no-scroll');
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        $('.day').text(d < 10 ? '0' + d : d);
+        $('.hour').text(h < 10 ? '0' + h : h);
+        $('.min').text(m < 10 ? '0' + m : m);
+        $('.sec').text(s < 10 ? '0' + s : s);
     }
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
 
-    ['click','touchstart','keydown'].forEach(evt =>
-      intro.addEventListener(evt, dismissIntro, { once: true })
-    );
-    setTimeout(dismissIntro, 6000);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
-  else run();
-})();
+    // 3. 语言切换 (简易示例)
+    $('#switch-en').click(function() { alert('Switching to English'); });
+    $('#switch-zh').click(function() { alert('切换至中文'); });
+
+    // 4. 音乐按钮
+    $('#music-btn').click(function() {
+        if (window.__musicState.isPlaying) window.pauseBgMusic();
+        else window.playBgMusic();
+    });
+
+    // 5. Intro 遮罩逻辑
+    const intro = $('#intro');
+    function dismiss() {
+        if (intro.hasClass('hidden')) return;
+        intro.addClass('hidden');
+        window.playBgMusic();
+        document.getElementById('bg-video').play().catch(()=>{});
+        setTimeout(() => intro.remove(), 800);
+    }
+    intro.on('click touchstart', dismiss);
+    setTimeout(dismiss, 6000);
+});
