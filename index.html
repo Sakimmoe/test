@@ -9,13 +9,12 @@
     <link rel="stylesheet" href="resources/css/index.css">
     <link rel="icon" href="resources/images/logo.png" type="image/png">
 
-    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-storage@latest/dist/av-core-mini.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.10.0/dist/storage.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/leancloud-realtime@5.0.0-beta.7/dist/realtime.min.js"></script>
 
     <style>
         /* ----------------------- 弹幕功能 CSS (已优化定位) ----------------------- */
         
-        /* 弹幕容器：占满背景区域 */
         #danmaku-container {
             position: absolute; 
             top: 0;
@@ -28,7 +27,6 @@
             z-index: 10; 
         }
 
-        /* 单个弹幕样式 */
         .danmaku-item {
             position: absolute;
             white-space: nowrap; 
@@ -41,13 +39,11 @@
             animation: scroll-danmaku 10s linear forwards; 
         }
 
-        /* 关键帧动画 */
         @keyframes scroll-danmaku {
             from { transform: translateX(0); }
             to { transform: translateX(calc(-100% - 100vw)); } 
         }
 
-        /* 输入区域样式 */
         #danmaku-input-area {
             position: fixed; 
             bottom: 20px;
@@ -82,10 +78,8 @@
         const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
         const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
         
-        // 尝试在页面加载前初始化 AV，解决 AV is not defined
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                // 仅当 AV 对象存在时才初始化，避免再次报错
                 if (typeof AV !== 'undefined' && AV.init) {
                     AV.init({
                         appId: APP_ID,
@@ -93,8 +87,7 @@
                     });
                     console.log('AV initialized successfully.');
                 } else {
-                    // 如果 DOMContentLoaded 时 AV 仍未定义，可能是网络或 CDN 阻碍
-                    console.error('Initialization failed: AV is not defined during DOMContentLoaded.');
+                    console.error('Initialization failed: AV is not defined during DOMContentLoaded. (CDN PATH ERROR LIKELY)');
                 }
             } catch (e) {
                 console.error('AV initialization error:', e);
@@ -213,9 +206,9 @@
 
         // --- B. 连接和监听实时消息 (重点：依赖 AV 必须已经初始化) ---
         async function setupDanmaku() {
-            // 如果 AV 仍然未定义，直接退出，避免崩溃
+            // 如果 AV 仍然未定义，直接退出
             if (typeof AV === 'undefined') {
-                console.error("Fatal Error: AV SDK failed to load. Cannot connect to danmaku service.");
+                console.error("Fatal Error: AV SDK failed to load. Cannot connect to danmaku service. (Check Network Tab for CDN failure)");
                 return;
             }
             
