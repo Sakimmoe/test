@@ -10,22 +10,19 @@
     <link rel="icon" href="resources/images/logo.png" type="image/png">
 
     <style>
-        /* ----------------------- 弹幕功能 CSS (已针对你网站进行优化) ----------------------- */
+        /* ----------------------- 弹幕功能 CSS (已优化定位) ----------------------- */
         
-        /* 弹幕容器：关键设置 */
+        /* 弹幕容器：占满背景区域 */
         #danmaku-container {
-            /* 放置在内容上方，但必须在 body/background 内部 */
             position: absolute; 
             top: 0;
             left: 0;
             width: 100%;
             height: 100%; /* 占满屏幕 */
-            /* 背景透明，只显示弹幕 */
             background-color: transparent;
             overflow: hidden; 
-            /* 确保弹幕不会影响用户点击原有页面的元素 */
-            pointer-events: none; 
-            z-index: 10; /* 确保弹幕在背景视频之上，但在内容之下（如果你希望内容覆盖弹幕） */
+            pointer-events: none; /* 不阻挡背景视频或点击事件 */
+            z-index: 10; 
         }
 
         /* 单个弹幕样式 */
@@ -37,11 +34,11 @@
             color: #fff; 
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); 
             right: 0; 
-            pointer-events: none; /* 弹幕本身不可点击 */
+            pointer-events: none; 
             animation: scroll-danmaku 10s linear forwards; 
         }
 
-        /* 关键帧动画：定义弹幕从右到左的移动 */
+        /* 关键帧动画 */
         @keyframes scroll-danmaku {
             from { transform: translateX(0); }
             to { transform: translateX(calc(-100% - 100vw)); } 
@@ -55,9 +52,9 @@
             transform: translateX(-50%);
             width: 90%;
             max-width: 600px;
-            z-index: 20; /* 确保输入框在所有内容之上 */
-            pointer-events: all; /* 确保用户可以点击输入 */
-            display: flex; /* 使用 flex 布局对齐输入框和按钮 */
+            z-index: 20; 
+            pointer-events: all; /* 允许点击和输入 */
+            display: flex; 
             gap: 10px;
         }
         #comment-input {
@@ -65,6 +62,7 @@
             flex-grow: 1;
             border: 1px solid #ccc;
             border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.9); /* 稍微透明的背景，便于阅读 */
         }
         #send-btn {
             padding: 10px 20px;
@@ -99,7 +97,7 @@
             loop
             playsinline
             webkit-playsinline
-            x5-playsinline="true"
+            x5-playsplaysinline="true"
             x5-video-player-type="h5"
             preload="auto"
             disablepictureinpicture
@@ -157,28 +155,19 @@
         © This website is solely dedicated to documenting the 28-year promise between Shizuku Lulu and the Lulumins.
     </footer>
     
-    <script src="resources/js/jquery-3.2.1.min.js"></script>    
-    
     <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@latest/dist/av-core-mini.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leancloud-realtime@latest/dist/av-realtime.js"></script>
 
+    <script src="resources/js/jquery-3.2.1.min.js"></script>    
+    
     <script src="resources/js/index.js"></script>
 
     <script>
-        // 【已替换】你的密钥和服务器地址
+        // 【已替换】你的密钥
         const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
         const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
-        const REST_API_URL = 'https://m7d44wkw.api.lncldglobal.com'; 
-
-        const CONVERSATION_ID = 'global-danmaku-room'; // 弹幕频道ID
+        const CONVERSATION_ID = 'global-danmaku-room';
         const clientID = 'anon-' + Math.random().toString(36).substring(7);
-
-        // 初始化 LeanCloud
-        AV.init({
-            appId: APP_ID,
-            appKey: APP_KEY,
-            serverURLs: REST_API_URL 
-        });
 
         // 获取 DOM 元素
         const danmakuContainer = document.getElementById('danmaku-container');
@@ -191,42 +180,39 @@
         // --- A. 弹幕渲染和动效函数 ---
         function renderDanmaku(text) {
             if (!danmakuContainer || !text) return; 
-
             const danmaku = document.createElement('div');
             danmaku.className = 'danmaku-item';
             danmaku.textContent = text;
             
-            // 随机生成弹幕的垂直位置 (使用容器的实际高度)
             const containerHeight = danmakuContainer.clientHeight;
             const danmakuHeight = 30; 
-            
-            const topPosition = Math.floor(Math.random() * (containerHeight * 0.8)); // 避免弹幕出现在顶部和底部边缘
+            const topPosition = Math.floor(Math.random() * (containerHeight * 0.8));
             danmaku.style.top = `${topPosition}px`;
             
             danmakuContainer.appendChild(danmaku);
-
-            danmaku.addEventListener('animationend', () => {
-                danmaku.remove();
-            });
+            danmaku.addEventListener('animationend', () => { danmaku.remove(); });
         }
 
         // --- B. 连接和监听实时消息 (已修复逻辑) ---
         async function setupDanmaku() {
             try {
-                // 1. 简化的 Realtime 初始化
+                // 1. 初始化 AV (现在 AV 应该已定义)
+                AV.init({
+                    appId: APP_ID,
+                    appKey: APP_KEY
+                });
+                
+                // 2. 简化的 Realtime 初始化
                 realtime = new AV.Realtime({ appId: APP_ID }); 
 
-                // 2. 匿名登录客户端
                 const client = await realtime.createIMClient(clientID);
                 
-                // 3. 获取或创建一个公共聊天室
                 conversation = await client.getConversation(CONVERSATION_ID, {
                     name: 'Danmaku Room',
                     isUnique: true,
                     transient: false 
                 });
 
-                // 4. 设置消息监听器
                 client.on('message', (message, convo) => {
                     if (convo.id === CONVERSATION_ID) {
                         renderDanmaku(message.getText());
@@ -237,14 +223,10 @@
 
             } catch (error) {
                 console.error('LeanCloud 连接失败:', error); 
-
-                let errorMessage = '弹幕服务连接失败。';
-                if (error.code === 4100) {
-                    errorMessage += '（错误代码 4100：应用可能处于免费版的休眠期。）';
-                }
-                
-                // alert(errorMessage); // 不再弹窗，避免影响用户体验
-                console.log(errorMessage);
+                // 错误提示 (在控制台显示，避免弹窗干扰用户)
+                if (error.code === 4100) { console.log('LeanCloud 应用处于休眠期。'); }
+                else if (error.code === 4101) { console.log('App ID 或 App Key 配置错误。'); }
+                else { console.log('未知连接错误。'); }
             }
         }
 
@@ -253,7 +235,6 @@
             const text = input.value.trim();
             if (!text) return;
 
-            // 修复点：在发送前检查 conversation 是否已成功建立
             if (!conversation) {
                  alert('弹幕服务未连接或正在连接中，请稍候再试。');
                  return;
@@ -268,7 +249,7 @@
 
             try {
                 await conversation.send(message);
-                input.value = ''; // 清空输入框
+                input.value = '';
             } catch (e) {
                 console.error("发送失败:", e);
                 alert('发送弹幕失败，请检查网络或 LeanCloud 状态。');
