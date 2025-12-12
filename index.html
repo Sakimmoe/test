@@ -3,99 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>28年后 你还会想起我吗</title> 
+    <title>28年后 你还会想起我吗</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <link rel="stylesheet" href="resources/css/index.css">
     <link rel="icon" href="resources/images/logo.png" type="image/png">
-
-    <script defer src="resources/js/leancloud/av-core.js"></script>
-    <script defer src="resources/js/leancloud/realtime.min.js"></script>
-
-    <style>
-        /* ----------------------- 弹幕功能 CSS (已优化定位) ----------------------- */
-        
-        #danmaku-container {
-            position: absolute; 
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%; 
-            background-color: transparent;
-            overflow: hidden; 
-            pointer-events: none; 
-            z-index: 10; 
-        }
-
-        .danmaku-item {
-            position: absolute;
-            white-space: nowrap; 
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff; 
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7); 
-            right: 0; 
-            pointer-events: none; 
-            animation: scroll-danmaku 10s linear forwards; 
-        }
-
-        @keyframes scroll-danmaku {
-            from { transform: translateX(0); }
-            to { transform: translateX(calc(-100% - 100vw)); } 
-        }
-
-        #danmaku-input-area {
-            position: fixed; 
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 600px;
-            z-index: 20; 
-            pointer-events: all; 
-            display: flex; 
-            gap: 10px;
-        }
-        #comment-input {
-            padding: 10px;
-            flex-grow: 1;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        #send-btn {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-    </style>
-
-    <script>
-        // 【你的密钥】
-        const APP_ID = 'm7d44WKW3c28c4AD5YedvDjF-MdYXbMMI'; 
-        const APP_KEY = 'tmEhn2GeWMwa0SmKYT4JTzbo'; 
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // 现在 AV 应该可以被定义了
-                if (typeof AV !== 'undefined' && AV.init) {
-                    AV.init({
-                        appId: APP_ID,
-                        appKey: APP_KEY
-                    });
-                    console.log('AV initialized successfully.');
-                } else {
-                    // 如果仍然失败，说明本地文件路径或文件本身有问题
-                    console.error('Initialization failed: AV is not defined during DOMContentLoaded. (LOCAL FILE MISSING!)');
-                }
-            } catch (e) {
-                console.error('AV initialization error:', e);
-            }
-        });
-    </script>
 </head>
 <body>
     <div id="intro">
@@ -108,10 +19,8 @@
             <div class="intro-hint" aria-hidden="true">Please Press Any Key♪</div>
         </div>
     </div>
-    
+
     <div class="background">
-        <div id="danmaku-container"></div>
-        
         <video
             id="bg-video"
             class="background-video"
@@ -164,11 +73,6 @@
             <img id="music-btn" src="resources/images/musicon.webp" alt="Music Toggle">
         </div>
     </div>
-    
-    <div id="danmaku-input-area">
-        <input type="text" id="comment-input" placeholder="发送一条实时弹幕...">
-        <button id="send-btn">发送弹幕</button>
-    </div>
 
     <audio id="bg-music" preload="none" loop>
         <source src="resources/audio/true.mp3" type="audio/mpeg">
@@ -177,105 +81,8 @@
     <footer class="footer">
         © This website is solely dedicated to documenting the 28-year promise between Shizuku Lulu and the Lulumins.
     </footer>
-    
-    <script>
-        const CONVERSATION_ID = 'global-danmaku-room';
-        const clientID = 'anon-' + Math.random().toString(36).substring(7);
 
-        // 获取 DOM 元素
-        const danmakuContainer = document.getElementById('danmaku-container');
-        const input = document.getElementById('comment-input');
-        const sendBtn = document.getElementById('send-btn');
-
-        let realtime = null;
-        let conversation = null;
-
-        // --- A. 弹幕渲染和动效函数 ---
-        function renderDanmaku(text) {
-            if (!danmakuContainer || !text) return; 
-            const danmaku = document.createElement('div');
-            danmaku.className = 'danmaku-item';
-            danmaku.textContent = text;
-            
-            const containerHeight = danmakuContainer.clientHeight;
-            const danmakuHeight = 30; 
-            const topPosition = Math.floor(Math.random() * (containerHeight * 0.8));
-            danmaku.style.top = `${topPosition}px`;
-            
-            danmakuContainer.appendChild(danmaku);
-            danmaku.addEventListener('animationend', () => { danmaku.remove(); });
-        }
-
-        // --- B. 连接和监听实时消息 (重点：依赖 AV 必须已经初始化) ---
-        async function setupDanmaku() {
-            // 如果 AV 仍然未定义，可能是本地文件路径或文件本身有问题
-            if (typeof AV === 'undefined') {
-                console.error("Fatal Error: AV SDK failed to load. Cannot connect to danmaku service. (请检查本地文件路径是否正确: resources/js/leancloud/)");
-                return;
-            }
-            
-            try {
-                // 1. 简化的 Realtime 初始化
-                realtime = new AV.Realtime({ appId: APP_ID }); 
-
-                const client = await realtime.createIMClient(clientID);
-                
-                conversation = await client.getConversation(CONVERSATION_ID, {
-                    name: 'Danmaku Room',
-                    isUnique: true,
-                    transient: false 
-                });
-
-                client.on('message', (message, convo) => {
-                    if (convo.id === CONVERSATION_ID) {
-                        renderDanmaku(message.getText());
-                    }
-                });
-                
-                console.log('LeanCloud 实时连接成功！');
-
-            } catch (error) {
-                console.error('LeanCloud RTM connection failed:', error); 
-                // 错误提示 (在控制台显示，避免弹窗干扰用户)
-                if (error.code === 4100) { console.log('LeanCloud 应用处于休眠期。'); }
-                else if (error.code === 4101) { console.log('App ID 或 App Key 配置错误。'); }
-                else { console.log('未知连接错误。'); }
-            }
-        }
-
-        // --- C. 发送弹幕函数 ---
-        sendBtn.addEventListener('click', async () => {
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (!conversation) {
-                 alert('弹幕服务未连接或正在连接中，请稍候再试。');
-                 return;
-            }
-
-            if (text.length > 50) {
-                alert('弹幕内容过长（限制50字）');
-                return;
-            }
-
-            const message = new AV.TextMessage(text);
-
-            try {
-                await conversation.send(message);
-                input.value = '';
-            } catch (e) {
-                console.error("发送失败:", e);
-                alert('发送弹幕失败，请检查网络或 LeanCloud 状态。');
-            }
-        });
-
-        // 页面加载完成后启动
-        window.onload = setupDanmaku;
-    </script>
-
-
-    <script src="resources/js/jquery-3.2.1.min.js"></script>    
-    
+    <script src="resources/js/jquery-3.2.1.min.js"></script>
     <script src="resources/js/index.js"></script>
 </body>
 </html>
